@@ -1,0 +1,4 @@
+Modelo,Accuracy,Precision,Recall,F1,ROC_AUC,Tiempo_min,Hiperparametros
+Random Forest,0.8070175438596491,0.8,0.875,0.8358208955223881,0.7975,0.9765938599904378,"{'bootstrap': True, 'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 3, 'min_samples_split': 2, 'n_estimators': 300}"
+XGBoost,0.8596491228070176,0.8636363636363636,0.890625,0.8769230769230768,0.8553125000000001,1.6006661176681518,"{'subsample': 0.6749999999999999, 'reg_lambda': 0, 'reg_alpha': 0, 'n_estimators': 450, 'max_depth': 9, 'learning_rate': 0.01, 'gamma': 0.05, 'colsample_bytree': 0.925}"
+SVM,0.7543859649122807,0.7307692307692307,0.890625,0.8028169014084506,0.7353125,0.05580007632573446,"{'C': 10, 'gamma': 0.01, 'kernel': 'rbf'}"
