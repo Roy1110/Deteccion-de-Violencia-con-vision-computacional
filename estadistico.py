@@ -1,5 +1,3 @@
-# conversacion: https://chat.deepseek.com/share/rckuccsj89rbjhil43
-
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
