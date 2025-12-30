@@ -12,9 +12,7 @@ import psutil
 import time
 
 
-# ==============================================
 #   FUNCIÓN: cargar modelo dentro de cada proceso
-# ==============================================
 def cargar_modelo_keypoints_cpu():
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(
@@ -28,9 +26,7 @@ def cargar_modelo_keypoints_cpu():
     return DefaultPredictor(cfg)
 
 
-# ==============================================
 #   PROCESAMIENTO INDIVIDUAL DE UN VIDEO
-# ==============================================
 def procesar_video(args):
     categoria, ruta_video, salida_temp, salto_frames = args
     nombre_video = os.path.basename(ruta_video)
@@ -91,15 +87,13 @@ def procesar_video(args):
         return None
 
 
-# ==============================================
 #   PROCESAMIENTO GLOBAL EN PARALELO
-# ==============================================
 def procesar_en_paralelo(ruta_base, salida_csv, salto_frames=10):
     categorias = ["violencia_limpios", "noViolencia"]
     salida_temp = os.path.join(ruta_base, "salida_deteccion/temp_videos")
     os.makedirs(salida_temp, exist_ok=True)
 
-    # --- detectar cuántos procesos usar ---
+    # procesos a usar
     total_ram = psutil.virtual_memory().total / (1024 ** 3)
     max_proc = min(cpu_count(), max(1, int(total_ram // 3)))
     torch.set_num_threads(1)
@@ -109,11 +103,11 @@ def procesar_en_paralelo(ruta_base, salida_csv, salto_frames=10):
     print(f"Memoria total: {total_ram:.1f} GB")
     print(f"Usando hasta {max_proc} procesos.\n")
 
-    # --- detectar videos ya procesados ---
+    # detectar videos ya procesados
     procesados = {os.path.splitext(f)[0] for f in os.listdir(salida_temp) if f.endswith(".csv")}
     print(f"{len(procesados)} videos ya procesados (reanudar desde ahí).\n")
 
-    # --- generar lista de tareas ---
+    # generar lista de tareas
     tareas = []
     for categoria in categorias:
         dir_cat = os.path.join(ruta_base, categoria)
@@ -142,9 +136,7 @@ def procesar_en_paralelo(ruta_base, salida_csv, salto_frames=10):
     print(f"Resultados combinados en: {salida_csv}")
 
 
-# ==============================================
 #   COMBINACIÓN FINAL DE CSVs
-# ==============================================
 def combinar_csvs(carpeta_temp, salida_csv):
     archivos = [os.path.join(carpeta_temp, f) for f in os.listdir(carpeta_temp) if f.endswith(".csv")]
     if not archivos:
@@ -163,10 +155,6 @@ def combinar_csvs(carpeta_temp, salida_csv):
     df_final.to_csv(salida_csv, index=False)
     print("CSV combinado guardado.")
 
-
-# ==============================================
-#   EJECUCIÓN PRINCIPAL
-# ==============================================
 if __name__ == "__main__":
     ruta_base = "/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados"
     salida_csv = os.path.join(ruta_base, "vectores_keypoints_full.csv")

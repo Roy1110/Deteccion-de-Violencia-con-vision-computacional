@@ -1,0 +1,2 @@
+df = pd.read_csv("/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/salida_deteccion/dataset_agregado_local.csv")
+cap = cv2.VideoCapture("/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/noViolencia/NV_138.mp4")

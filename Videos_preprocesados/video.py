@@ -8,21 +8,16 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2 import model_zoo
 from itertools import combinations
-
-# --- Imports adicionales del Script 2 ---
 from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog
-
-# ... otros imports ...
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
 # ----------------------------------------
 
-# ================================
-# 1️⃣ CONFIGURAR DETECTRON2
-# ================================
-print("Cargando modelo Detectron2...")
+# 1. Hacemos la configuracion para DETECTRON2
+
+print("Cargando modelo Detectron2")
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file(
     "COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml"))
@@ -34,12 +29,10 @@ predictor = DefaultPredictor(cfg)
 coco_metadata = MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
 
 
-# ================================
-# 2️⃣ FUNCIONES AUXILIARES (DE TUS SCRIPTS DE ENTRENAMIENTO)
-# ================================
+# 2. Añadimos las funciones auxiliares, que se usaron en los scripts de entrenamiento
 
 def angulo_3p(a, b, c):
-    """Calcula el ángulo (en grados) entre tres puntos 2D: a–b–c."""
+    """Calcula el angulo (en grados) entre tres puntos 2D: a–b–c."""
     ba = a - b
     bc = c - b
     cos_ang = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc) + 1e-8)
@@ -48,7 +41,7 @@ def angulo_3p(a, b, c):
 def agregar_estadisticos(df):
     """Calcula agregados (mean, std, max, min) para un dataframe de features."""
     estad = {}
-    # Rellenar NaNs antes de calcular estadísticas
+    # Rellenar NaNs antes de calcular estadisticas
     df = df.fillna(0) 
     
     for col in df.columns:
@@ -61,34 +54,25 @@ def agregar_estadisticos(df):
     return {k: (v if pd.notna(v) else 0) for k, v in estad.items()}
 
 
-# ================================
-# 3️⃣ CARGAR MODELO Y SCALER
-# ================================
-# ================================
-# 3️⃣ CARGAR MODELO Y SCALER
-# ================================
-print("Cargando modelo de clasificación (RF) y scaler...")
+
+# 3. Se carga el modelo y scaler
+
+print("Cargando modelo de clasificación y scaler")
 try:
-    # --- CAMBIO APLICADO ---
-    # Desempaquetar la tupla guardada en el archivo .pkl
-    # Asumimos que "modelo_rf.pkl" contiene (modelo, scaler)
-    rf_model, scaler = joblib.load("/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/modelos_guardados/random_forest.pkl")
+    # A la hora de guardar el modelo, se hizo que el "modelo" contiene tanto el modelo como el scaler
+    rf_model, scaler = joblib.load("/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/modelos_guardados/svm.pkl")
     
-    # Ya no necesitas cargar "scaler.pkl" por separado
-    # scaler = joblib.load("scaler.pkl") 
-    
+    # por si nos equivocamos al poner la ruta XD
 except FileNotFoundError:
-    print("Error: No se encontró 'modelo_rf.pkl'.")
+    print("Error: No se encontro 'modelo_rf.pkl'.") 
     exit()
 except ValueError:
     print("Error al cargar 'modelo_rf.pkl'.")
-    print("Asegúrate de que SÍ contenga una tupla (modelo, scaler).")
+    print("Asegúrate de que SI contenga una tupla (modelo, scaler).")
     exit()
 
-# ================================
-# 4️⃣ CONFIGURAR VIDEO
-# ================================
-video_path = "//home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/noViolencia/NV_2.mp4"
+# 4. Hacamos la configuracio del video
+video_path = "//home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/violencia_limpios/V_1.mp4"
 cap = cv2.VideoCapture(video_path)
 if not cap.isOpened():
     raise FileNotFoundError(f"No se pudo abrir el video: {video_path}")
@@ -96,31 +80,26 @@ if not cap.isOpened():
 fps = int(cap.get(cv2.CAP_PROP_FPS))
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-output_path = os.path.join(os.getcwd(), "salida_detectada_full_features6_svm.mp4")
+output_path = os.path.join(os.getcwd(), "salida_detectada_full_features7_svm.mp4")
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 print(f"Video de entrada: {video_path} ({width}x{height} @ {fps} FPS)")
 
-# ================================
-# 5️⃣ PARÁMETROS DE SEGMENTACIÓN Y ESTADO
-# ================================
-segment_duration_seconds = 1
+# 5. Parametros para segmentar y definir el estado
+segment_duration_seconds = 1              # Duracion de cada segmento en segundos, osea que cada segundo puede cambiar de estado
 segment_frames = int(fps * segment_duration_seconds)
-print(f"Procesando en segmentos de {segment_frames} frames ({segment_duration_seconds} seg)...")
+print(f"Procesando en segmentos de {segment_frames} frames ({segment_duration_seconds} seg)")
 
-# --- Variables de estado para calcular velocidad/aceleración ---
-# Guardará los datos de la persona (centro, velocidad) del frame anterior
+# Variables de estado para calcular velocidad/aceleracion
+# Guardamos los datos de la persona (centro, velocidad) del frame anterior
 prev_person_data = {} 
-# -----------------------------------------------------------
 
 # Buffer para guardar todas las filas de interacciones del segmento
 buffer_interacciones_features = []
-prediccion_actual = 0  # 0 = No Violencia, 1 = Violencia
+prediccion_actual = 0  # 0 = No Violencia, 1 = Violencia; siempre asumiendo que no hay violencia al inicio
 
-# ================================
-# 6️⃣ PROCESAR FRAME A FRAME
-# ================================
-print("Procesando video (esto puede tardar)...")
+# 6. Se reliza el procesamiento frame a frame
+print("Procesando video ")
 frame_count = 0
 while True:
     ret, frame = cap.read()
@@ -129,31 +108,31 @@ while True:
     
     frame_count += 1
     if frame_count % fps == 0:
-        print(f"  ... procesando segundo {frame_count // fps}")
+        print(f"procesando segundo {frame_count // fps}")
 
     outputs = predictor(frame)
     instancias = outputs["instances"].to("cpu")
 
-    # --- Visualización (como antes) ---
+    # Visualizacion
     v = Visualizer(frame[:, :, ::-1], metadata=coco_metadata, scale=1.0)
     out_vis = v.draw_instance_predictions(instancias)
     frame_con_deteccion = out_vis.get_image()[:, :, ::-1]
     frame_con_deteccion = np.ascontiguousarray(frame_con_deteccion) # FIX para cv2.putText
 
-    # --- INICIO DE LA LÓGICA DE FEATURES INTEGRADAS ---
+    # INICIO DE LA LOGICA DE FEATURES INTEGRADAS
     keypoints = instancias.pred_keypoints.numpy() if instancias.has("pred_keypoints") else []
     
-    current_person_data = {} # Datos de personas en ESTE frame
-    frame_interaction_results = [] # Interacciones de ESTE frame
+    current_person_data = {} # Datos de personas en este frame
+    frame_interaction_results = [] # Interacciones de este frame
 
-    # --- Bucle 1: Calcular features individuales (Script 1 y 2) ---
+    # Bucle 1: Calcular features individuales
     for pid, puntos in enumerate(keypoints):
         puntos_xy = puntos[:, :2]
         centro = np.mean(puntos_xy, axis=0)
 
-        # Calcular ángulos
+        # Calcular angulos
         try:
-            ang_brazo_der = angulo_3p(puntos_xy[5], puntos_xy[7], puntos_xy[9])   # hombro, codo, muñeca
+            ang_brazo_der = angulo_3p(puntos_xy[5], puntos_xy[7], puntos_xy[9])   
             ang_brazo_izq = angulo_3p(puntos_xy[6], puntos_xy[8], puntos_xy[10])
             ang_pierna_der = angulo_3p(puntos_xy[11], puntos_xy[13], puntos_xy[15])
             ang_pierna_izq = angulo_3p(puntos_xy[12], puntos_xy[14], puntos_xy[16])
@@ -170,11 +149,11 @@ while True:
             prev_data = prev_person_data[pid]
             prev_pts = prev_data["puntos_xy"]
             
-            # Calcular velocidad (como en tu script 1)
+            # Calcular velocidad
             desplazamiento = np.linalg.norm(puntos_xy - prev_pts, axis=1)
             velocidad_media = np.mean(desplazamiento)
 
-            # Calcular aceleración (como en tu script 2)
+            # Calcular aceleración 
             prev_velocidad = prev_data.get("velocidad_media", 0.0)
             aceleracion = abs(velocidad_media - prev_velocidad)
 
@@ -190,7 +169,7 @@ while True:
             "orientacion": orientacion
         }
 
-    # --- Bucle 2: Calcular features de interacción (Script 2) ---
+    # Bucle 2: Calcular features de interaccion 
     pids = list(current_person_data.keys())
     if len(pids) >= 2:
         for i, j in combinations(pids, 2):
@@ -204,7 +183,7 @@ while True:
             
             dir_vec = d2["centro"] - d1["centro"]
             dir_norm = dir_vec / (np.linalg.norm(dir_vec) + 1e-6)
-            mov_rel = np.dot(dir_norm, d2["centro"] - d1["centro"]) # Revisar esta lógica si da problemas
+            mov_rel = np.dot(dir_norm, d2["centro"] - d1["centro"])
 
             # Crear un diccionario de features (fila)
             interaction_features = {
@@ -212,7 +191,7 @@ while True:
                 "velocidad_relativa": vel_rel,
                 "aceleracion_prom": acel_prom,
                 "diferencia_orientacion": orient_diff,
-                # Usamos los ángulos de la persona 1 (puedes cambiarlos a p2 o promediar si prefieres)
+                # Usamos los angulos de la persona 1 (anque tambien se pudo usar p2 o promediar pero ya lo dejamos asi)
                 "ang_brazo_der": d1["ang_brazo_der"],
                 "ang_brazo_izq": d1["ang_brazo_izq"],
                 "ang_pierna_der": d1["ang_pierna_der"],
@@ -221,30 +200,30 @@ while True:
             }
             frame_interaction_results.append(interaction_features)
 
-    # Actualizar el estado para el próximo frame
+    # Actualizar el estado para el proximo frame
     prev_person_data = current_person_data
     
     # Agregar las interacciones de este frame al buffer del segmento
     buffer_interacciones_features.extend(frame_interaction_results)
-    # --- FIN DE LA LÓGICA DE FEATURES ---
+    # Acabamos con la logica de los features
 
 
-    # Cada segmento → generar predicción
+    # Cada segmento → generar prediccion
     if (frame_count % segment_frames == 0) and (len(buffer_interacciones_features) > 0):
         
         # 1. Convertir el buffer de dicts a un DataFrame
         df_segmento = pd.DataFrame(buffer_interacciones_features)
         
-        # 2. Aplicar agregación estadística (Script 3)
+        # 2. Aplicar agregación estadistica 
         features_dict = agregar_estadisticos(df_segmento)
         
         # 3. Convertir a DataFrame de 1 fila para el scaler
         X_df = pd.DataFrame([features_dict])
 
         try:
-            # 4. REVISADO: Preparar datos y predecir según el tipo de modelo
-            
-            # Asegurarse de que el DataFrame tenga las columnas correctas
+            # 4. Ahora se preparan los datos y predecir segun el tipo de modelo
+            # Esto nos causo un poco de confusion porque RF y SVM se entrenaron con diferentes tipos de datos
+            # Aseguramos que el DataFrame tenga las columnas correctas
             X_df_filled = X_df.reindex(columns=scaler.get_feature_names_out()).fillna(0)
 
             X_para_predecir = None
@@ -272,7 +251,7 @@ while True:
         
         except ValueError as e:
             print(f"Error al predecir: {e}")
-            pass # Mantener la predicción anterior
+            pass # Mantener la prediccion anterior
         
         buffer_interacciones_features = []  # limpiar buffer
 
@@ -287,4 +266,4 @@ while True:
 
 cap.release()
 out.release()
-print(f"\n✅ Video procesado y guardado en: {output_path}")
+print(f"\n Video procesado y guardado en: {output_path}")

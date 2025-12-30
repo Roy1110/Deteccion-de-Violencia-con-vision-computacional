@@ -166,36 +166,36 @@ class VideoDimensionAnalyzer:
     def generate_report(self):
         """Genera el reporte completo"""
         print("=" * 60)
-        print("📊 INFORME ESTADÍSTICO DE DIMENSIONES DE VIDEO")
+        print("INFORME ESTADÍSTICO DE DIMENSIONES DE VIDEO")
         print("=" * 60)
         
         # Análisis por categoría
         category_analysis = {}
         for category in self.categories:
-            print(f"\n📁 ANÁLISIS PARA: '{category}'")
+            print(f"\nANÁLISIS PARA: '{category}'")
             analysis = self.analyze_category(category)
             category_analysis[category] = analysis
             
-            print(f"   📈 Total de videos: {analysis['total_videos']}")
-            print(f"   🎯 Dimensión más frecuente: {analysis['most_frequent']['resolution']} "
+            print(f"Total de videos: {analysis['total_videos']}")
+            print(f"Dimensión más frecuente: {analysis['most_frequent']['resolution']} "
                   f"({analysis['most_frequent']['count']} videos - {analysis['most_frequent']['percentage']:.1f}%)")
-            print(f"   🔢 Resoluciones únicas: {analysis['unique_resolutions']}")
+            print(f"Resoluciones únicas: {analysis['unique_resolutions']}")
             
-            print("   📊 Distribución por calidad:")
+            print("Distribución por calidad:")
             for quality, count in analysis['quality_distribution'].items():
                 percentage = (count / analysis['total_videos']) * 100
                 print(f"     - {quality}: {count} videos ({percentage:.1f}%)")
                 
             # Top 5 resoluciones
             top_5 = sorted(analysis['resolutions'], key=lambda x: x['count'], reverse=True)[:5]
-            print("   🏆 Top 5 resoluciones:")
+            print("Top 5 resoluciones:")
             for res in top_5:
                 print(f"     - {res['resolution']}: {res['count']} videos ({res['percentage']:.1f}%)")
         
         # Análisis combinado
-        print(f"\n🔄 ANÁLISIS COMBINADO")
+        print(f"\nANÁLISIS COMBINADO")
         total_combined = sum(category_analysis[cat]['total_videos'] for cat in self.categories)
-        print(f"   📈 Total de videos: {total_combined}")
+        print(f"Total de videos: {total_combined}")
         
         for cat in self.categories:
             percentage = (category_analysis[cat]['total_videos'] / total_combined) * 100
@@ -217,31 +217,31 @@ class VideoDimensionAnalyzer:
         top_10_combined = sorted(resolution_totals.items(), 
                                key=lambda x: x[1]['total'], reverse=True)[:10]
         
-        print(f"\n🏆 TOP 10 RESOLUCIONES COMBINADAS:")
+        print(f"\n TOP 10 RESOLUCIONES COMBINADAS:")
         for i, (res, data) in enumerate(top_10_combined, 1):
             percentage = (data['total'] / total_combined) * 100
             cat_dist = " | ".join([f"{cat}: {count}" for cat, count in data['categories'].items()])
             print(f"   {i:2d}. {res}: {data['total']} videos ({percentage:.1f}%) [{cat_dist}]")
         
         # Recomendación de resolución óptima
-        print(f"\n🎯 RECOMENDACIÓN DE RESOLUCIÓN ÓPTIMA")
+        print(f"\n RECOMENDACIÓN DE RESOLUCIÓN ÓPTIMA")
         recommendations = self.recommend_optimal_resolution()
         
-        print("   Evaluación de candidatos:")
+        print(" Evaluación de candidatos:")
         for i, rec in enumerate(recommendations[:5], 1):
-            print(f"   {i}. {rec['resolution']} ({rec['pixels']} px, AR: {rec['aspect_ratio']})")
-            print(f"      📉 Reducción promedio: {rec['avg_reduction']:.1f}% "
+            print(f"{i}. {rec['resolution']} ({rec['pixels']} px, AR: {rec['aspect_ratio']})")
+            print(f"Reducción promedio: {rec['avg_reduction']:.1f}% "
                   f"({rec['reduction_videos']} videos)")
-            print(f"      📈 Aumento promedio: {rec['avg_increase']:.1f}% "
+            print(f" Aumento promedio: {rec['avg_increase']:.1f}% "
                   f"({rec['increase_videos']} videos)")
             print(f"      ⚖️ Score: {rec['score']:.2f}")
         
         best_rec = recommendations[0]
-        print(f"\n   🏅 RECOMENDACIÓN: {best_rec['resolution']}")
-        print(f"      - Balance óptimo calidad/rendimiento")
-        print(f"      - Impacto promedio: {best_rec['avg_reduction']:.1f}% reducción, "
+        print(f"\n RECOMENDACIÓN: {best_rec['resolution']}")
+        print(f"Balance óptimo calidad/rendimiento")
+        print(f" Impacto promedio: {best_rec['avg_reduction']:.1f}% reducción, "
               f"{best_rec['avg_increase']:.1f}% aumento")
-        print(f"      - Aspect ratio: {best_rec['aspect_ratio']} (16:9 estándar)")
+        print(f" Aspect ratio: {best_rec['aspect_ratio']} (16:9 estándar)")
         
     def create_visualizations(self):
         """Crea visualizaciones del análisis"""
@@ -320,8 +320,4 @@ if __name__ == "__main__":
     # Crear visualizaciones
     analyzer.create_visualizations()
     
-    print("\n" + "=" * 60)
-    print("✅ Análisis completado exitosamente!")
-    print("📊 Reporte generado en consola")
-    print("🖼️  Gráficos guardados como 'analisis_dimensiones.png'")
-    print("=" * 60)
+    print("Gráficos guardados como 'analisis_dimensiones.png'")

@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import psutil
 import multiprocessing as mp
-import pickle  # <--- 1. CAMBIO: Usar pickle en lugar de joblib
-import json    # <--- 2. AÑADIDO: Para guardar los hiperparámetros
+import pickle  
+import json    
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
@@ -17,10 +17,9 @@ from sklearn.metrics import (
 )
 import matplotlib.pyplot as plt
 
-# ==========================================================
+
 # 1. CARGA DE DATOS
-# ==========================================================
-ruta_csv = "/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/salida_deteccion/dataset_agregado_local.csv"
+ruta_csv = "/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados/salida_deteccion/interacciones_extendido_local.csv"
 print(f"Cargando dataset desde: {ruta_csv}")
 
 df = pd.read_csv(ruta_csv)
@@ -41,17 +40,13 @@ X_test_scaled = scaler.transform(X_test)
 
 print(f"Datos listos: {len(X_train)} entrenamiento, {len(X_test)} prueba.")
 
-# ==========================================================
 # 2. CONFIGURACIÓN ADAPTATIVA
-# ==========================================================
 cpu_total = mp.cpu_count()
 ram_gb = psutil.virtual_memory().total / (1024**3)
-procesos = max(2, min(cpu_total // 4, 4))
+procesos = max(2, cpu_total - 1)
 print(f"CPU totales: {cpu_total} | RAM: {ram_gb:.1f} GB | Usando {procesos} procesos")
 
-# ==========================================================
 # 3. FUNCIÓN DE ENTRENAMIENTO
-# ==========================================================
 def entrenar_modelo(nombre):
     inicio = time.time()
     if nombre == "Random Forest":
@@ -101,26 +96,22 @@ def entrenar_modelo(nombre):
         modelo = grid.best_estimator_
 
     duracion = (time.time() - inicio) / 60
-    best_params = grid.best_params_ # <--- 3. AÑADIDO: Obtener los mejores hiperparámetros
+    best_params = grid.best_params_ # Obtener los mejores hiperparámetros
     print(f"{nombre} finalizado en {duracion:.2f} min.")
     
-    # <--- 4. CAMBIO: Devolver también los hiperparámetros
+    # Devolver también los hiperparámetros
     return nombre, modelo, duracion, best_params
 
-# ==========================================================
 # 4. ENTRENAMIENTO EN PARALELO
-# ==========================================================
 modelos = ["Random Forest", "XGBoost", "SVM"]
 
 with mp.Pool(processes=procesos) as pool:
     # 'resultados' ahora tendrá (nombre, modelo, duracion, best_params)
     resultados = pool.map(entrenar_modelo, modelos)
 
-# ==========================================================
 # 5. EVALUACIÓN FINAL
-# ==========================================================
 evaluaciones = []
-# <--- 5. CAMBIO: Desempaquetar los best_params
+# Desempaquetar los best_params
 for nombre, modelo, duracion, best_params in resultados:
     print(f"\nEvaluando {nombre}...")
     X_eval = X_test_scaled if nombre == "SVM" else X_test
@@ -152,47 +143,40 @@ for nombre, modelo, duracion, best_params in resultados:
         "F1": f1,
         "ROC_AUC": roc,
         "Tiempo_min": duracion,
-        "Hiperparametros": best_params # <--- 6. AÑADIDO: Guardar hiperparámetros en el dict
+        "Hiperparametros": best_params # Guardamos los hiperparámetros en el dict
     })
 
-# ==========================================================
 # 6. GUARDADO DE RESULTADOS (CSV)
-# ==========================================================
 # El CSV ahora contendrá la columna 'Hiperparametros'
 pd.DataFrame(evaluaciones).to_csv("evaluacion_modelos_supervisados.csv", index=False)
 print("\nResultados guardados en evaluacion_modelos_supervisados.csv")
 
-# ==========================================================
-# 7. GUARDADO DE MODELOS (NUEVA SECCIÓN CON PICKLE)
-# ==========================================================
+# 7. GUARDADO DE MODELOS
 model_dir = "modelos_guardados"
 os.makedirs(model_dir, exist_ok=True)
 print(f"\nGuardando modelos y scaler en: {model_dir}")
 
-# <--- 7. CAMBIO: Desempaquetar best_params aquí también
+# Desempaquetar best_params aquí también
 for nombre, modelo, duracion, best_params in resultados:
-    # Crear un nombre de archivo limpio, ej: "random_forest"
+    # Crear un nombre de archivo limpio, como "random_forest"
     file_name = nombre.lower().replace(' ', '_')
     
-    # --- Guardar el modelo y scaler como tupla usando PICKLE ---
+    # Guardar el modelo y scaler
     pkl_path = os.path.join(model_dir, file_name + '.pkl')
     try:
         with open(pkl_path, 'wb') as f: # 'wb' es "write binary"
             pickle.dump((modelo, scaler), f)
-        print(f"  -> Modelo guardado: {pkl_path}")
+        print(f" Modelo guardado: {pkl_path}")
     except Exception as e:
-        print(f"  -> ERROR al guardar {pkl_path}: {e}")
+        print(f" ERROR al guardar {pkl_path}: {e}")
 
-    # --- Guardar los hiperparámetros en un JSON separado ---
+    # Guardar los hiperparámetros en un JSON separado ---
     param_path = os.path.join(model_dir, file_name + '_params.json')
     try:
         # Convertir tipos numpy a nativos de python si es necesario
         params_serializables = {k: (v.item() if hasattr(v, 'item') else v) for k, v in best_params.items()}
         with open(param_path, 'w') as f: # 'w' es "write text"
             json.dump(params_serializables, f, indent=4)
-        print(f"  -> Hiperparámetros guardados: {param_path}")
+        print(f"Hiperparámetros guardados: {param_path}")
     except Exception as e:
-        print(f"  -> ERROR al guardar {param_path}: {e}")
-
-
-print("¡Guardado de modelos completo!")
+        print(f"ERROR al guardar {param_path}: {e}")

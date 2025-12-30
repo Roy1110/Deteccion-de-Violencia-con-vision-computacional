@@ -2,10 +2,6 @@ import os
 import subprocess
 
 def procesar_video_directo(ruta_video_entrada, ruta_video_salida, ancho_out, alto_out, fps_out):
-    """
-    Usa subprocess para ejecutar FFmpeg directamente, evitando problemas de escapado
-    de la librería ffmpeg-python.
-    """
     try:
         print(f"  Procesando: {os.path.basename(ruta_video_entrada)}...")
 
@@ -30,22 +26,10 @@ def procesar_video_directo(ruta_video_entrada, ruta_video_salida, ancho_out, alt
         # Ejecutamos el comando directamente
         subprocess.run(command, check=True, capture_output=True)
         
-        print(f"  -> ✅ Guardado en: {ruta_video_salida} ({ancho_out}x{alto_out} @ {fps_out}fps)")
-
-    except subprocess.CalledProcessError as e:
-        # Si FFmpeg devuelve un error, lo capturamos aquí
-        print(f"  -> ❌ FALLÓ (Error de FFmpeg): {os.path.basename(ruta_video_entrada)}")
-        # `e.stderr` contiene el mensaje de error exacto de ffmpeg
-        print(f"     Detalle del error: {e.stderr.decode('utf8').strip()}")
-        
-    except FileNotFoundError:
-        # Este error ocurre si el comando 'ffmpeg' no se encuentra en el sistema
-        print("  -> ❌ ERROR CRÍTICO: No se encontró el comando 'ffmpeg'.")
-        print("     Asegúrate de que FFmpeg esté instalado y accesible desde la terminal.")
-        return False # Devuelve False para detener el proceso
+        print(f"Guardado en: {ruta_video_salida} ({ancho_out}x{alto_out} @ {fps_out}fps)")
         
     except Exception as e:
-        print(f"  -> ❌ Ocurrió un error inesperado con {os.path.basename(ruta_video_entrada)}: {e}")
+        print(f" Ocurrio un error inesperado con {os.path.basename(ruta_video_entrada)}: {e}")
         
     return True
 
@@ -56,14 +40,13 @@ if __name__ == "__main__":
     ALTO_FINAL = 360
     FPS_FINAL = 30
 
-    print(f"🚀 Iniciando conversión a {ANCHO_FINAL}x{ALTO_FINAL} y {FPS_FINAL} FPS...")
-    print("-" * 50)
+    print(f"Iniciando conversion a {ANCHO_FINAL}x{ALTO_FINAL} y {FPS_FINAL} FPS ")
 
     for carpeta in carpetas_origen:
         carpeta_salida = f"{carpeta}_procesado"
         if not os.path.exists(carpeta_salida):
             os.makedirs(carpeta_salida)
-            print(f"📁 Creada carpeta de salida: '{carpeta_salida}'")
+            print(f" Creada carpeta de salida: '{carpeta_salida}'")
         
         print(f"\nProcesando carpeta: '{carpeta}'")
         
@@ -75,6 +58,4 @@ if __name__ == "__main__":
                     # Si la función detecta que ffmpeg no está, detiene todo el proceso.
                     exit()
             elif os.path.getsize(ruta_completa) == 0:
-                 print(f"  -> 🟡 Omitiendo archivo vacío: {nombre_archivo}")
-
-    print("\n🎉 ¡Proceso completado!")
+                 print(f" Omitiendo archivo vacío: {nombre_archivo}")

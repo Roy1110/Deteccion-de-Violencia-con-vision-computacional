@@ -18,11 +18,7 @@ def obtener_cfg():
 
 def predecir_keypoints(ruta_imagen):
     """
-    Realiza la detección de puntos clave en una imagen usando CPU
-    
-    Args:
-        ruta_imagen (str): Ruta a la imagen a procesar
-    """
+    Realiza la detección de puntos clave en una imagen usando CPU"""
     try:
         # Cargar la imagen
         imagen = cv2.imread(ruta_imagen)
@@ -71,13 +67,7 @@ def predecir_keypoints(ruta_imagen):
         return None
 
 def procesar_directorio_imagenes(directorio, max_imagenes=None):
-    """
-    Procesa todas las imágenes en un directorio
-    
-    Args:
-        directorio (str): Ruta al directorio con imágenes
-        max_imagenes (int): Límite máximo de imágenes a procesar (opcional)
-    """
+    """ Procesa todas las imágenes en un directorio"""
     # Extensiones de imagen soportadas
     extensiones = ['*.jpg', '*.jpeg', '*.png', '*.bmp']
     
@@ -94,18 +84,11 @@ def procesar_directorio_imagenes(directorio, max_imagenes=None):
     print(f"Usando dispositivo: CPU")
     
     for i, ruta in enumerate(rutas_imagenes):
-        print(f"\n--- Procesando imagen {i+1}/{len(rutas_imagenes)} ---")
+        print(f"\n Procesando imagen {i+1}/{len(rutas_imagenes)} ---")
         predecir_keypoints(ruta)
 
 def guardar_resultados(ruta_imagen, outputs, directorio_salida="resultados"):
-    """
-    Guarda los resultados en archivos en lugar de mostrarlos
-    
-    Args:
-        ruta_imagen (str): Ruta a la imagen original
-        outputs: Resultados del predictor
-        directorio_salida (str): Directorio donde guardar los resultados
-    """
+    """Guarda los resultados en archivos en lugar de mostrarlos"""
     if not os.path.exists(directorio_salida):
         os.makedirs(directorio_salida)
     
@@ -128,15 +111,13 @@ def guardar_resultados(ruta_imagen, outputs, directorio_salida="resultados"):
     cv2.imwrite(ruta_salida, out.get_image()[:, :, ::-1])
     print(f"Resultado guardado en: {ruta_salida}")
 
-# Versión optimizada para procesamiento por lotes (sin mostrar imágenes)
+# Procesamiento por lotes (sin mostrar imágenes)
 def procesar_lote_sin_visualizacion(directorio, directorio_salida="resultados_keypoints"):
-    """
-    Procesa todas las imágenes y guarda los resultados sin mostrar en pantalla
-    """
+
     if not os.path.exists(directorio_salida):
         os.makedirs(directorio_salida)
     
-    # Configuración del modelo (una sola vez)
+    # Configuración del modelo
     cfg_keypoint = obtener_cfg()
     cfg_keypoint.merge_from_file(model_zoo.get_config_file("COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml"))
     cfg_keypoint.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
@@ -149,7 +130,7 @@ def procesar_lote_sin_visualizacion(directorio, directorio_salida="resultados_ke
     for extension in extensiones:
         rutas_imagenes.extend(glob.glob(os.path.join(directorio, extension)))
     
-    print(f"Procesando {len(rutas_imagenes)} imágenes en modo lote...")
+    print(f"Procesando {len(rutas_imagenes)} imágenes en modo lote")
     
     for i, ruta in enumerate(rutas_imagenes):
         try:
@@ -170,13 +151,13 @@ def procesar_lote_sin_visualizacion(directorio, directorio_salida="resultados_ke
             print(f"  → Error: {e}")
 
 if __name__ == "__main__":
-    # OPCIÓN 1: Procesar con visualización (máximo 5 imágenes para prueba)
+    # OPCION 1: Procesar con visualizacion (maximo 5 imagenes para prueba)
     # procesar_directorio_imagenes(
     #     "/home/rodrigo/6tosemestre/metodologia/proyecto/Deteccion-de-violencia/Videos_preprocesados/imagenes_keypoints/violencia/V_228",
     #     max_imagenes=5
     # )
     
-    # OPCIÓN 2: Procesar en lote y guardar resultados (recomendado para muchas imágenes)
+    # OPCION 2: Procesar en lote y guardar resultados (para muchas imagenes)
     procesar_lote_sin_visualizacion(
         "/home/rodrigo/6tosemestre/metodologia/proyecto/Deteccion-de-violencia/Videos_preprocesados/imagenes_keypoints/violencia/V_228",
         directorio_salida="resultados_keypoints"

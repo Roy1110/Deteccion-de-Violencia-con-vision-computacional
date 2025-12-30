@@ -8,9 +8,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-# ---------------------------
 # Función auxiliar: ángulo entre tres puntos
-# ---------------------------
 def angulo_3p(a, b, c):
     """Calcula el ángulo (en grados) entre tres puntos 2D: a–b–c."""
     ba = a - b
@@ -19,9 +17,7 @@ def angulo_3p(a, b, c):
     return np.degrees(np.arccos(np.clip(cos_ang, -1.0, 1.0)))
 
 
-# ---------------------------
 # Cálculo de interacciones extendidas
-# ---------------------------
 def calcular_interacciones_extendido(csv_entrada, csv_salida):
     """
     Calcula características avanzadas de movimiento e interacción entre personas.
@@ -150,9 +146,6 @@ def calcular_interacciones_extendido(csv_entrada, csv_salida):
     print(f"\nCSV extendido guardado en: {csv_salida}")
 
 
-# ---------------------------
-# Ejecución principal
-# ---------------------------
 if __name__ == "__main__":
     ruta_base = "/home/rodrigo/6tosemestre/Computo Paralelo/proyecto_violencia/Videos_preprocesados"
     csv_entrada = os.path.join(ruta_base, "salida_deteccion/vectores_keypoints_full.csv")
